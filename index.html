@@ -4,16 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1f2937">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Montaj Formu</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; font: 16px/1.4 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f1f3f6; color: #1f2937; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  body { margin: 0; font: 16px/1.4 Roboto, -apple-system, "Segoe UI", Arial, sans-serif; background: #f1f3f6; color: #1f2937; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   button { font: inherit; cursor: pointer; color: inherit; }
-  /* iOS zoom yapmasın diye 16px */
   input, textarea { font: inherit; font-size: 16px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; width: 100%; color: inherit; }
-  nav { display: flex; background: #1f2937; position: sticky; top: 0; z-index: 3; padding-top: env(safe-area-inset-top); }
+  input:focus, textarea:focus { outline: 2px solid #e8590c; outline-offset: -1px; }
+  nav { display: flex; background: #1f2937; position: sticky; top: 0; z-index: 6; padding-top: env(safe-area-inset-top); }
   nav button { flex: 1; background: none; color: #94a3b8; border: 0; padding: 14px 4px; font-weight: 600; border-bottom: 3px solid transparent; }
   nav button.on { color: #fff; border-bottom-color: #e8590c; }
   main { padding: 12px; max-width: 640px; margin: 0 auto; }
@@ -29,7 +31,7 @@
   .f label { display: block; font-size: 13px; color: #64748b; }
   .f label input { margin-top: 3px; }
   .f .full { grid-column: 1 / -1; }
-  .f .code-wrap { display: grid; grid-template-columns: 90px 1fr; gap: 10px; grid-column: 1 / -1; }
+  .code-wrap { position: relative; display: grid; grid-template-columns: 90px 1fr; gap: 10px; grid-column: 1 / -1; }
   .who { width: 100%; margin-top: 3px; min-height: 44px; text-align: left; padding: 10px; border: 1px dashed #94a3b8; background: #f8fafc; border-radius: 8px; }
   .who:empty::before { content: "Kişi seç…"; color: #94a3b8; }
   .seg { display: flex; margin-top: 3px; }
@@ -39,13 +41,22 @@
   .seg button.on[data-v=Evet] { background: #16a34a; border-color: #16a34a; color: #fff; }
   .seg button.on[data-v=Hayır] { background: #dc2626; border-color: #dc2626; color: #fff; }
 
-  .bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e2e8f0; }
+  /* ürün seçme listesi */
+  #dd { position: absolute; top: 100%; left: 0; right: 0; z-index: 5; margin: 4px 0 0; padding: 0; list-style: none; background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); max-height: 280px; overflow-y: auto; overscroll-behavior: contain; }
+  #dd li { display: flex; gap: 10px; align-items: baseline; padding: 13px 12px; border-bottom: 1px solid #eef0f3; }
+  #dd li:active { background: #fff1e8; }
+  #dd li b { min-width: 44px; color: #e8590c; }
+  #dd li.empty { color: #94a3b8; }
+
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid #e2e8f0; }
   .bottom button { flex: 1; padding: 14px 0; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; }
   .bottom .main { background: #e8590c; border-color: #e8590c; color: #fff; }
+  .bottom button:disabled { opacity: .6; }
 
   .add { background: #fff; border-radius: 12px; padding: 12px; margin-bottom: 12px; display: grid; gap: 10px; }
   .add .two { display: grid; grid-template-columns: 90px 1fr; gap: 10px; }
   .add button { padding: 12px; border: 0; border-radius: 8px; background: #e8590c; color: #fff; font-weight: 600; }
+  .add button:disabled { opacity: .6; }
   ul.list { list-style: none; padding: 0; margin: 0; background: #fff; border-radius: 12px; overflow: hidden; }
   ul.list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px; border-bottom: 1px solid #eef0f3; }
   ul.list li button { border: 0; background: none; color: #dc2626; padding: 6px 10px; }
@@ -58,6 +69,9 @@
   dialog .btns { display: flex; gap: 8px; margin-top: 12px; }
   dialog .btns button { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; }
   dialog .btns button[value=ok] { background: #e8590c; border-color: #e8590c; color: #fff; font-weight: 600; }
+
+  #toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 9; background: #1f2937; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; max-width: 90vw; text-align: center; transition: opacity .2s; }
+  #toast[hidden] { display: block; opacity: 0; pointer-events: none; }
 
   /* Çıktı (PDF + yazdır) — kağıttaki form düzeni */
   .sheet { width: 194mm; font: 8pt/1.25 Arial, Helvetica, sans-serif; color: #000; background: #fff; }
@@ -95,11 +109,7 @@
       <button id="clear">Yeni Form</button>
     </div>
     <div id="rows"></div>
-    <div class="card">
-      <label style="font-size:13px;color:#64748b">Not (formun altına yazılır)
-        <textarea id="note" rows="2" style="margin-top:3px"></textarea>
-      </label>
-    </div>
+    <div class="card"><textarea id="note" rows="2" placeholder="NOT"></textarea></div>
   </section>
 
   <section id="people" hidden>
@@ -135,8 +145,7 @@
   </form>
 </dialog>
 
-<datalist id="codes"></datalist>
-<datalist id="names"></datalist>
+<div id="toast" hidden></div>
 <div id="print"></div>
 
 <script>
@@ -144,8 +153,11 @@ const $ = s => document.querySelector(s);
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const lower = s => String(s).toLocaleLowerCase('tr');
 const today = () => new Date().toLocaleDateString('sv'); // yerel saatle YYYY-MM-DD
 const trDate = d => d ? d.split('-').reverse().join('.') : '';
+let toastT;
+const toast = msg => { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2500); };
 
 // [alan, başlık, giriş tipi, çıktıdaki genişlik mm]  — Kişi kolonu 20mm, toplam 194mm (A4 - kenar)
 const COLS = [
@@ -154,7 +166,7 @@ const COLS = [
   ['ok', 'Sağlam Ürün Adeti', 'numeric', 14],
   ['sort', '%100 Ayıklama', 'eh', 15],
   ['first20', 'İlk 20 dk', 'eh', 15],
-  ['lot', 'Lot', 'text', 27],
+  ['lot', 'Lot', 'numeric', 27],
   ['koliIc', 'Koli İç miktar', 'numeric', 12],
   ['koli', 'Koli Adedi', 'decimal', 11],
   ['nc', 'Uygunsuza Ayrılan Ürün adeti', 'numeric', 14],
@@ -162,17 +174,69 @@ const COLS = [
 ];
 const PRINT_ROWS = 20; // kağıttaki gibi çıktı en az 20 satır
 
+/* ---------- Kişi/ürün listeleri: JSONBin (tüm telefonlar ortak) ---------- */
+// shortcut: herkese açık kutu, anahtarsız yazılıyor; ID'yi bilen herkes değiştirebilir. Gerekirse X-Access-Key'li özel kutuya geçin.
+const BIN = 'https://api.jsonbin.io/v3/b/6af618ccac6210605a835b6a';
+const norm = r => ({ people: Array.isArray(r?.people) ? r.people : [], products: Array.isArray(r?.products) ? r.products : [] });
+let db = norm(load('db', null)); // internet yoksa son çekilen liste
+
+async function pull() {
+  const res = await fetch(BIN + '/latest', { headers: { 'X-Bin-Meta': 'false' }, cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return norm(await res.json());
+}
+async function sync() {
+  try { db = await pull(); save('db', db); renderLists(); }
+  catch { toast('İnternet yok — son kaydedilen listeler kullanılıyor'); }
+}
+// Önce güncel veriyi çek, değişikliği onun üstüne uygula: iki telefon aynı anda ekleyince biri silinmesin
+async function mutate(fn) {
+  try {
+    const d = await pull();
+    fn(d);
+    d.people.sort((a, b) => a.localeCompare(b, 'tr'));
+    d.products.sort((a, b) => a.code.localeCompare(b.code, 'tr', { numeric: true }));
+    const res = await fetch(BIN, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    db = d; save('db', db); renderLists(); toast('Kaydedildi');
+    return true;
+  } catch (e) { toast('Kaydedilemedi (' + e.message + ') — interneti kontrol edin'); return false; }
+}
+
+function renderLists() {
+  $('#personList').innerHTML = db.people.map(p => `<li>${esc(p)}<button data-del-person="${esc(p)}">Sil</button></li>`).join('') || '<li>Henüz kişi yok</li>';
+  $('#productList').innerHTML = db.products.map(p => `<li><span><b>${esc(p.code)}</b> — ${esc(p.name)}</span><button data-del-product="${esc(p.code)}">Sil</button></li>`).join('') || '<li>Henüz ürün yok</li>';
+}
+async function busy(btn, job) { btn.disabled = true; try { return await job(); } finally { btn.disabled = false; } }
+
+$('#personForm').onsubmit = async e => {
+  e.preventDefault();
+  const names = e.target.elements.v.value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (await busy(e.submitter, () => mutate(d => { d.people = [...new Set([...d.people, ...names])]; }))) e.target.reset();
+};
+$('#productForm').onsubmit = async e => {
+  e.preventDefault();
+  const f = e.target.elements, code = f.code.value.trim(), name = f.pname.value.trim();
+  // aynı kod varsa adı güncellenir
+  if (await busy(e.submitter, () => mutate(d => { d.products = d.products.filter(p => p.code !== code).concat({ code, name }); }))) {
+    e.target.reset(); f.code.focus();
+  }
+};
+document.addEventListener('click', e => {
+  const d = e.target.dataset;
+  if (d.delPerson && confirm(`"${d.delPerson}" silinsin mi?`)) mutate(x => { x.people = x.people.filter(p => p !== d.delPerson); });
+  if (d.delProduct && confirm(`"${d.delProduct}" kodlu ürün silinsin mi?`)) mutate(x => { x.products = x.products.filter(p => p.code !== d.delProduct); });
+});
+
+/* ---------- Form (telefonda saklanır) ---------- */
 const blank = () => ({ people: [], ...Object.fromEntries(COLS.map(c => [c[0], ''])) });
 const newForm = () => ({ date: today(), note: '', rows: [blank()] });
-
-let people = load('people', []);
-let products = load('products', []);
 let form = load('form', null) || newForm();
-const saveForm = () => save('form', form);
+let pendingFile = null; // paylaşım izni zaman aşımına uğrarsa hazır PDF
+const saveForm = () => { save('form', form); pendingFile = null; $('#pdf').textContent = 'PDF İndir'; };
 
-/* ---------- Form (telefon: her satır bir kart) ---------- */
-const inp = (r, i, k, t, extra = '') =>
-  `<input data-i="${i}" data-k="${k}" ${t !== 'text' ? `inputmode="${t}"` : ''} value="${esc(r[k])}" autocomplete="off" ${extra}>`;
+const inp = (r, i, k, t) =>
+  `<input data-i="${i}" data-k="${k}" ${t !== 'text' ? `inputmode="${t}"` : ''} value="${esc(r[k])}" autocomplete="off">`;
 const seg = (r, i, k) => `<div class="seg">${['Evet', 'Hayır'].map(v =>
   `<button type="button" data-i="${i}" data-k="${k}" data-v="${v}" class="${r[k] === v ? 'on' : ''}">${v}</button>`).join('')}</div>`;
 
@@ -183,11 +247,11 @@ function renderRows() {
       <div class="f">
         <label class="full">Kişi<button type="button" class="who" data-i="${i}">${esc(r.people.join(', '))}</button></label>
         <div class="code-wrap">
-          <label>Ürün kodu${inp(r, i, 'code', 'numeric', 'list="codes"')}</label>
-          <label>Ürün adı${inp(r, i, 'name', 'text', 'list="names"')}</label>
+          <label>Ürün kodu${inp(r, i, 'code', 'numeric')}</label>
+          <label>Ürün adı${inp(r, i, 'name', 'text')}</label>
         </div>
         <label>Sağlam Ürün Adeti${inp(r, i, 'ok', 'numeric')}</label>
-        <label>Lot${inp(r, i, 'lot', 'text')}</label>
+        <label>Lot${inp(r, i, 'lot', 'numeric')}</label>
         <label>%100 Ayıklama${seg(r, i, 'sort')}</label>
         <label>İlk 20 dk${seg(r, i, 'first20')}</label>
         <label>Koli İç Miktar${inp(r, i, 'koliIc', 'numeric')}</label>
@@ -198,16 +262,50 @@ function renderRows() {
     </div>`).join('');
 }
 
+/* Ürün seçme listesi: kod ya da ad yazdıkça süzülür, kaydırılabilir */
+const dd = document.createElement('ul');
+dd.id = 'dd';
+dd.hidden = true;
+const isProdInput = el => el.dataset?.k === 'code' || el.dataset?.k === 'name';
+function openDD(el) {
+  el.closest('.code-wrap').appendChild(dd);
+  const q = lower(el.value.trim());
+  const list = db.products.filter(p => !q || p.code.startsWith(q) || lower(p.name).includes(q));
+  dd.dataset.i = el.dataset.i;
+  dd.innerHTML = list.map(p => `<li data-code="${esc(p.code)}"><b>${esc(p.code)}</b><span>${esc(p.name)}</span></li>`).join('')
+    || `<li class="empty">${db.products.length ? 'Eşleşen ürün yok' : 'Önce “Ürünler” sekmesinden ürün ekleyin'}</li>`;
+  dd.hidden = false;
+  dd.scrollTop = 0;
+}
+dd.addEventListener('mousedown', e => e.preventDefault()); // dokununca yazı kutusu odağı kaybetmesin
+dd.addEventListener('click', e => {
+  const li = e.target.closest('li[data-code]');
+  if (!li) return;
+  const p = db.products.find(p => p.code === li.dataset.code), r = form.rows[dd.dataset.i];
+  const card = dd.closest('.card');
+  r.code = p.code; r.name = p.name;
+  card.querySelector('[data-k=code]').value = p.code;
+  card.querySelector('[data-k=name]').value = p.name;
+  saveForm();
+  dd.hidden = true;
+  document.activeElement.blur(); // klavyeyi kapat
+});
+$('#rows').addEventListener('focusin', e => { if (isProdInput(e.target)) openDD(e.target); });
+$('#rows').addEventListener('focusout', e => { if (isProdInput(e.target)) dd.hidden = true; });
+
 $('#rows').addEventListener('input', e => {
   const el = e.target, i = el.dataset.i, k = el.dataset.k;
   if (i == null || !k) return;
   const r = form.rows[i];
+  // Lot: 6 haneden sonra "/" otomatik (ör. 070826/0077008) — sayı klavyesinde "/" yok
+  if (k === 'lot' && /^\d{7,}$/.test(el.value)) el.value = el.value.slice(0, 6) + '/' + el.value.slice(6);
   r[k] = el.value;
-  // kod girilince ad, ad seçilince kod otomatik dolar
-  if (k === 'code' || k === 'name') {
-    const p = products.find(p => p[k] === el.value.trim());
+  if (isProdInput(el)) {
+    // tam eşleşen kod/ad yazılınca karşı alan otomatik dolar
+    const p = db.products.find(p => k === 'code' ? p.code === el.value.trim() : lower(p.name) === lower(el.value.trim()));
     const other = k === 'code' ? 'name' : 'code';
     if (p) { r[other] = p[other]; el.closest('.card').querySelector(`[data-k=${other}]`).value = p[other]; }
+    openDD(el);
   }
   saveForm();
 });
@@ -225,8 +323,8 @@ $('#rows').addEventListener('click', e => {
   } else if (b.classList.contains('who')) {
     pickRow = i;
     const sel = form.rows[i].people;
-    $('#pickList').innerHTML = people.length
-      ? people.map(p => `<label><input type="checkbox" value="${esc(p)}" ${sel.includes(p) ? 'checked' : ''}>${esc(p)}</label>`).join('')
+    $('#pickList').innerHTML = db.people.length
+      ? db.people.map(p => `<label><input type="checkbox" value="${esc(p)}" ${sel.includes(p) ? 'checked' : ''}>${esc(p)}</label>`).join('')
       : '<p>Önce “Kişiler” sekmesinden kişi ekleyin.</p>';
     $('#pick').returnValue = '';
     $('#pick').showModal();
@@ -275,53 +373,39 @@ function sheet() {
 const fillPrint = () => $('#print').innerHTML = sheet();
 window.addEventListener('beforeprint', fillPrint);
 $('#printBtn').onclick = () => { fillPrint(); window.print(); };
+
+function download(file) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+async function share(file) {
+  try { await navigator.share({ files: [file], title: file.name }); }
+  catch (e) {
+    if (e.name === 'NotAllowedError') { // PDF uzun sürdüyse tarayıcı paylaşımı engeller: bir dokunuş daha iste
+      pendingFile = file; $('#pdf').textContent = 'Paylaş'; toast('PDF hazır — paylaşmak için tekrar dokunun');
+    } else if (e.name !== 'AbortError') download(file);
+  }
+}
 $('#pdf').onclick = async () => {
-  if (!window.html2pdf) return alert('PDF kütüphanesi yüklenemedi (internet?). “Yazdır” ile PDF olarak kaydedebilirsiniz.');
+  if (pendingFile) { const f = pendingFile; pendingFile = null; $('#pdf').textContent = 'PDF İndir'; return share(f); }
+  if (!window.html2pdf) return toast('PDF kütüphanesi yüklenemedi (internet?) — “Yazdır” ile kaydedin');
   const b = $('#pdf'); b.disabled = true; b.textContent = 'Hazırlanıyor…';
+  let file;
   try {
-    await html2pdf().set({
+    const blob = await html2pdf().set({
       margin: 8,
-      filename: `Montaj_${trDate(form.date) || 'form'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, windowWidth: 800 }, // telefonda dar ekran düzeni bozmasın
+      html2canvas: { scale: 2, windowWidth: 800 }, // dar ekran düzeni çıktıyı bozmasın
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css'] },
-    }).from(sheet()).save();
-  } catch (err) { alert('PDF oluşturulamadı: ' + err.message); }
+    }).from(sheet()).outputPdf('blob');
+    file = new File([blob], `Montaj_${trDate(form.date) || 'form'}.pdf`, { type: 'application/pdf' });
+  } catch (err) { toast('PDF oluşturulamadı: ' + err.message); }
   b.disabled = false; b.textContent = 'PDF İndir';
+  if (!file) return;
+  if (navigator.canShare?.({ files: [file] })) await share(file); else download(file);
 };
-
-/* ---------- Kişiler / Ürünler ---------- */
-function renderLists() {
-  people.sort((a, b) => a.localeCompare(b, 'tr'));
-  products.sort((a, b) => a.code.localeCompare(b.code, 'tr', { numeric: true }));
-  save('people', people);
-  save('products', products);
-  $('#personList').innerHTML = people.map((p, i) => `<li>${esc(p)}<button data-del-person="${i}">Sil</button></li>`).join('') || '<li>Henüz kişi yok</li>';
-  $('#productList').innerHTML = products.map((p, i) => `<li><span><b>${esc(p.code)}</b> — ${esc(p.name)}</span><button data-del-product="${i}">Sil</button></li>`).join('') || '<li>Henüz ürün yok</li>';
-  $('#codes').innerHTML = products.map(p => `<option value="${esc(p.code)}">${esc(p.name)}</option>`).join('');
-  $('#names').innerHTML = products.map(p => `<option value="${esc(p.name)}">`).join('');
-}
-$('#personForm').onsubmit = e => {
-  e.preventDefault();
-  const names = e.target.elements.v.value.split('\n').map(s => s.trim()).filter(Boolean);
-  people = [...new Set([...people, ...names])];
-  e.target.reset();
-  renderLists();
-};
-$('#productForm').onsubmit = e => {
-  e.preventDefault();
-  const f = e.target.elements, code = f.code.value.trim(), name = f.pname.value.trim();
-  products = products.filter(p => p.code !== code).concat({ code, name }); // aynı kod varsa adı güncellenir
-  e.target.reset();
-  f.code.focus();
-  renderLists();
-};
-document.addEventListener('click', e => {
-  const d = e.target.dataset;
-  if (d.delPerson && confirm(`"${people[d.delPerson]}" silinsin mi?`)) { people.splice(d.delPerson, 1); renderLists(); }
-  if (d.delProduct && confirm(`"${products[d.delProduct].code}" silinsin mi?`)) { products.splice(d.delProduct, 1); renderLists(); }
-});
 
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
@@ -332,6 +416,7 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
 fillHeader();
 renderLists();
 renderRows();
+sync();
 </script>
 </body>
 </html>
